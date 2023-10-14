@@ -163,3 +163,5 @@ cython_debug/
 .test/
 .pagmo-master
 .pagmo-master/
+.pagmo
+.pagmo/

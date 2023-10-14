@@ -1,0 +1,10 @@
+Soluciones no dominadas encontradas: ZDT1
+Elementos: 26
+Media Funcion 1: 1.8771141773585767
+Media Funcion 2: 15.834321378862908
+------------------------------------------------------------------
+Soluciones no dominadas encontradas: ZDT1
+Elementos: 24
+Media Funcion 1: 0.4560976290184262
+Media Funcion 2: 19.82173597067984
+------------------------------------------------------------------

@@ -1,0 +1,40 @@
+Soluciones no dominadas encontradas: ZDT6
+Elementos: 2
+Media Funcion 1: 0.9996497764759691
+Media Funcion 2: 12.235849346094298
+------------------------------------------------------------------
+Soluciones no dominadas encontradas: ZDT6
+Elementos: 9
+Media Funcion 1: 0.9322786094967755
+Media Funcion 2: 12.113311771285579
+------------------------------------------------------------------
+Soluciones no dominadas encontradas: ZDT6
+Elementos: 6
+Media Funcion 1: 0.9740764768327846
+Media Funcion 2: 12.266970741298989
+------------------------------------------------------------------
+Soluciones no dominadas encontradas: ZDT6
+Elementos: 5
+Media Funcion 1: 0.9824010603222367
+Media Funcion 2: 12.863117823793624
+------------------------------------------------------------------
+Soluciones no dominadas encontradas: ZDT6
+Elementos: 7
+Media Funcion 1: 0.9562962447668077
+Media Funcion 2: 12.454803194878307
+------------------------------------------------------------------
+Soluciones no dominadas encontradas: ZDT6
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+1, Funcion 1: 0.938447985032341, Funcion 2: 12.687915292676092
+2, Funcion 1: 0.34678963873867596, Funcion 2: 12.769576832987811
+3, Funcion 1: 0.938447985032341, Funcion 2: 12.687915292676092
+4, Funcion 1: 0.34678963873867596, Funcion 2: 12.769576832987811
+5, Funcion 1: 0.4643707842921794, Funcion 2: 12.693296613474477
+6, Funcion 1: 0.9999999999999998, Funcion 2: 12.638099322004418
+7, Funcion 1: 1.0, Funcion 2: 12.603003515359822
+8, Funcion 1: 0.9999999999999998, Funcion 2: 12.638099322004418
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Elementos: 8
+Media Funcion 1: 0.7543557539792767
+Media Funcion 2: 12.685935378021368
+------------------------------------------------------------------

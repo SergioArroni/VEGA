@@ -1,266 +1,566 @@
-"""
-Vector Evaluated Genetic Algorithm (VEGA)
-=========================================
-One of the most simple approaches to solve
-multi-criteria optimization. Usually, it
-generates solutions that are close to one fitness
-function only, but not optimal for each
-function.
-
-
-Algorithm
----------
-- Initialization of population
-- Evaluate population
-- Loop until 100 generations
-  - split population in two parts
-  - each part
-    - selection (one part by best surface, other part by best volume)
-    - mutation
-    - crossover
-  - merge parts
-  - evaluate individuals
-
-
-Non-dominated front is not determined.
-"""
-
-import platypus as plat
-from random import randint, random, shuffle
-from math import log, pi
-from copy import copy
-from terminalplot import plot
-from platypus.problems import ZDT1, ZDT2, ZDT3, ZDT4, ZDT6, ZDT5
-from platypus.algorithms import NSGAII
+import numpy as np
+import random
 import matplotlib.pyplot as plt
+import math
+import seaborn as sns
+import warnings
+
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-class CylinderPhenotype:
-    """Individual (phenotype, creature)"""
+def vega(
+    objective_functions_list,
+    chromosome_type,
+    lower=[],
+    upper=[],
+    nBits=0,
+    population_size=None,
+    number_of_iterations=100,
+    nc=2,
+    mutation_probability=0.05,
+    uniform_mutation_sd=0.1,
+):
+    if chromosome_type == "binary":
+        return binary_vega(
+            objective_functions_list,
+            nBits,
+            population_size,
+            number_of_iterations,
+            mutation_probability,
+        )
+    elif chromosome_type == "real-valued":
+        return numeric_vega(
+            objective_functions_list,
+            lower,
+            upper,
+            population_size,
+            number_of_iterations,
+            nc,
+            uniform_mutation_sd,
+        )
+    else:
+        raise ValueError("Unknown chromosome type")
 
-    def __init__(self, genotype):
-        # Genotype (properties, chromosomes)
-        self.genotype = genotype
-        self.diameter = None
-        self.height = None
-        self.surface = None
-        self.volume = None
 
-    def __str__(self):
-        return "".join(
+def binary_vega(
+    objective_functions_list,
+    nBits,
+    population_size,
+    number_of_iterations,
+    mutation_probability=0.05,
+):
+    number_of_objective_functions = len(objective_functions_list)
+    subpopulation_size = int((population_size / number_of_objective_functions) * 2)
+    population = [init_binary_chromosome(nBits) for _ in range(population_size)]
+    statistics = {
+        "min_fitness": [[] for _ in range(number_of_objective_functions)],
+        "max_fitness": [[] for _ in range(number_of_objective_functions)],
+        "mean_fitness": [[] for _ in range(number_of_objective_functions)],
+        "sd_fitness": [[] for _ in range(number_of_objective_functions)],
+    }
+
+    for iteration in range(1, number_of_iterations + 1):
+        for i in range(1, int(population_size / 2) + 1):
+            parents = random.sample(range(population_size), 2)
+            children = one_point_crossover(
+                population[parents[0]], population[parents[1]]
+            )
+            population[population_size + i * 2 - 1] = children["child1"]
+            population[population_size + i * 2] = children["child2"]
+
+        population[population_size + 1 : 2 * population_size] = [
+            bind_parameters(binaryMutation, probability=mutation_probability)(
+                chromosome
+            )
+            for chromosome in population[population_size + 1 : 2 * population_size]
+        ]
+
+        random.shuffle(population)
+
+        objective_functions_values = np.array(
             [
-                "Gen: ",
-                self.genotype[:5],
-                ".",
-                self.genotype[5:],
-                " H: ",
-                str(self.height),
-                "\tD: ",
-                str(self.diameter),
-                "\tSurface: ",
-                str(self.surface),
-                "\tVolume: ",
-                str(self.volume),
+                list(map(lambda f: f(chromosome), objective_functions_list))
+                for chromosome in population
             ]
         )
 
-    def calculate_decimals(self):
-        self.diameter = binary_to_real(self.genotype[:5])
-        self.height = binary_to_real(self.genotype[5:])
-        return [self.diameter, self.height]
+        selected = []
 
-    def evaluate(self):
-        # surface
-        self.surface = pi * self.diameter**2 / 2 + pi * self.diameter * self.height
-        # volume greater than 300
-        self.volume = pi * self.diameter**2 * self.height / 4
-        return [self.surface, self.volume]
+        for i in range(number_of_objective_functions):
+            subpopulation_fitness = objective_functions_values[
+                (i * subpopulation_size) : ((i + 1) * subpopulation_size), i
+            ]
+            selected_subpopulation = tournament_selection(subpopulation_fitness)
+            selected_subpopulation = [
+                s + (i * subpopulation_size) for s in selected_subpopulation
+            ]
+            selected += selected_subpopulation[: int(subpopulation_size / 2)]
+
+        # population = [population[i] for i in selected]
+        # objective_functions_values = objective_functions_values[selected]
+
+        for i in range(number_of_objective_functions):
+            statistics["min_fitness"][i].append(
+                np.min(objective_functions_values[:, i])
+            )
+            statistics["max_fitness"][i].append(
+                np.max(objective_functions_values[:, i])
+            )
+            statistics["mean_fitness"][i].append(
+                np.mean(objective_functions_values[:, i])
+            )
+            statistics["sd_fitness"][i].append(np.std(objective_functions_values[:, i]))
+
+    nondominated = find_nondominated(objective_functions_values)
+
+    results = {
+        "values": objective_functions_values[nondominated],
+        "nondominated_solutions": [population[i] for i in nondominated],
+        "statistics": statistics,
+    }
+
+    parameters = {
+        "objective_functions_list": objective_functions_list,
+        "chromosome_type": "binary",
+        "nBits": nBits,
+        "population_size": population_size,
+        "number_of_iterations": number_of_iterations,
+        "mutation_probability": mutation_probability,
+    }
+
+    results["parameters"] = parameters
+
+    return results
 
 
-"""Genetic algorithm methodologies
-"""
+# Inicialización de cromosoma numérico (valores aleatorios dentro de los límites)
+def init_numeric_chromosome(lower, upper):
+    return np.random.uniform(lower, upper, size=len(lower))
 
 
-def initialize_population(size):
-    population = []
-    for _ in range(size):
-        population.append(
-            CylinderPhenotype(
-                # Random Genotype of length 10
-                "".join([str(randint(0, 1)) for _ in range(10)])
+# Inicialización de un cromosoma binario (valores aleatorios de 0 y 1)
+def init_binary_chromosome(nBits):
+    return np.random.randint(2, size=nBits)
+
+
+# Operador de mutación para cromosomas binarios (cambia aleatoriamente un bit)
+def binaryMutation(chromosome, probability):
+    mutated_chromosome = chromosome.copy()
+    for i in range(len(chromosome)):
+        if random.random() < probability:
+            mutated_chromosome[i] = (
+                1 - mutated_chromosome[i]
+            )  # Cambia de 0 a 1 o de 1 a 0 con la probabilidad dada
+    return mutated_chromosome
+
+
+# Función de selección para encontrar soluciones no dominadas en el espacio de Pareto
+def find_nondominated(objective_functions_values):
+    n = len(objective_functions_values)
+    nondominated_solutions = []
+
+    for i in range(n):
+        is_dominated = False
+        for j in range(n):
+            if i != j:  # No comparamos la solución con ella misma
+                if np.all(
+                    objective_functions_values[i] <= objective_functions_values[j]
+                ) and np.any(
+                    objective_functions_values[i] < objective_functions_values[j]
+                ):
+                    is_dominated = True
+                    break  # La solución i está dominada por al menos una solución
+
+        if not is_dominated:
+            nondominated_solutions.append(i)
+
+    return nondominated_solutions
+
+
+def numeric_vega(
+    objective_functions_list,
+    lower,
+    upper,
+    population_size,
+    number_of_iterations,
+    nc,
+    uniform_mutation_sd,
+):
+    if len(lower) != len(upper):
+        raise ValueError("Size of lower and upper differ")
+
+    number_of_objective_functions = len(objective_functions_list)
+    subpopulation_size = int((population_size / number_of_objective_functions) * 2)
+    population = [init_numeric_chromosome(lower, upper) for _ in range(population_size)]
+    statistics = {
+        "min_fitness": [[] for _ in range(number_of_objective_functions)],
+        "max_fitness": [[] for _ in range(number_of_objective_functions)],
+        "mean_fitness": [[] for _ in range(number_of_objective_functions)],
+        "sd_fitness": [[] for _ in range(number_of_objective_functions)],
+    }
+
+    for _ in range(1, number_of_iterations + 1):
+        for i in range(1, int(population_size / 2) + 1):
+            parents = random.sample(range(population_size), 2)
+            children = simulated_binary_crossover(
+                population[parents[0]], population[parents[1]], nc, lower, upper
+            )
+
+            # Verifica si la longitud de population es suficiente para la asignación
+            if population_size + i * 2 - 1 < len(population):
+                population[population_size + i * 2 - 1] = children["child1"]
+                population[population_size + i * 2] = children["child2"]
+            else:
+                # Si la lista es demasiado corta, agrégales a population
+                population.append(children["child1"])
+                population.append(children["child2"])
+
+        population[population_size + 1 : 2 * population_size] = [
+            bind_parameters(
+                normally_distributed_mutation,
+                sd=uniform_mutation_sd,
+                lower=lower,
+                upper=upper,
+            )(chromosome)
+            for chromosome in population[population_size + 1 : 2 * population_size]
+        ]
+
+        random.shuffle(population)
+
+        objective_functions_values = np.array(
+            [
+                list(map(lambda f: f(chromosome), objective_functions_list))
+                for chromosome in population
+            ]
+        )
+
+        selected = []
+
+        for i in range(number_of_objective_functions):
+            subpopulation_fitness = objective_functions_values[
+                (i * subpopulation_size) : ((i + 1) * subpopulation_size), i
+            ]
+            selected_subpopulation = tournament_selection(subpopulation_fitness)
+            selected_subpopulation = [
+                s + (i * subpopulation_size) for s in selected_subpopulation
+            ]
+            selected += selected_subpopulation[: int(subpopulation_size / 2)]
+
+        population = [population[i] for i in selected]
+        objective_functions_values = objective_functions_values[selected]
+
+        for i in range(number_of_objective_functions):
+            statistics["min_fitness"][i].append(
+                np.min(objective_functions_values[:, i])
+            )
+            statistics["max_fitness"][i].append(
+                np.max(objective_functions_values[:, i])
+            )
+            statistics["mean_fitness"][i].append(
+                np.mean(objective_functions_values[:, i])
+            )
+            statistics["sd_fitness"][i].append(np.std(objective_functions_values[:, i]))
+
+    nondominated = find_nondominated(objective_functions_values)
+
+    results = {
+        "values": objective_functions_values[nondominated],
+        "nondominated_solutions": [population[i] for i in nondominated],
+        "statistics": statistics,
+    }
+
+    parameters = {
+        "objective_functions_list": objective_functions_list,
+        "chromosome_type": "real-valued",
+        "lower": lower,
+        "upper": upper,
+        "population_size": population_size,
+        "number_of_iterations": number_of_iterations,
+        "nc": nc,
+        "uniform_mutation_sd": uniform_mutation_sd,
+    }
+
+    results["parameters"] = parameters
+
+    return results
+
+
+# Función de one-point crossover para cromosomas reales
+def one_point_crossover(parent1, parent2):
+    n = len(parent1)
+    crossover_point = random.randint(1, n - 1)
+    child1 = np.concatenate((parent1[:crossover_point], parent2[crossover_point:]))
+    child2 = np.concatenate((parent2[:crossover_point], parent1[crossover_point:]))
+    return {"child1": child1, "child2": child2}
+
+
+# Función de simulated binary crossover (SBX) para cromosomas reales
+def simulated_binary_crossover(parent1, parent2, nc, lower, upper):
+    u = random.random()
+    if u <= 0.5:
+        beta = (2.0 * u) ** (1.0 / (nc + 1))
+    else:
+        beta = (1.0 / (2.0 * (1.0 - u))) ** (1.0 / (nc + 1))
+
+    child1 = 0.5 * (((1 + beta) * parent1) + (1 - beta) * parent2)
+    child2 = 0.5 * (((1 - beta) * parent1) + (1 + beta) * parent2)
+
+    # Asegurarse de que los hijos estén dentro de los límites
+    child1 = np.clip(child1, lower, upper)
+    child2 = np.clip(child2, lower, upper)
+
+    return {"child1": child1, "child2": child2}
+
+
+def bind_parameters(func, **kwargs):
+    def wrapped(chromosome):
+        return func(chromosome, **kwargs)
+
+    return wrapped
+
+
+# Función de mutación distribuida normalmente para cromosomas reales
+def normally_distributed_mutation(chromosome, sd, lower, upper):
+    mutation = np.random.normal(0, sd, size=len(chromosome))
+    mutated_chromosome = chromosome + mutation
+
+    # Asegurarse de que el cromosoma mutado esté dentro de los límites
+    mutated_chromosome = np.clip(mutated_chromosome, lower, upper)
+
+    return mutated_chromosome
+
+
+# Función de selección por torneo
+def tournament_selection(subpopulation_fitness):
+    k = 2  # Número de individuos en el torneo
+    selected = []
+
+    while len(selected) < len(subpopulation_fitness):
+        competitors = random.sample(range(len(subpopulation_fitness)), k)
+        winner_index = np.argmin([subpopulation_fitness[i] for i in competitors])
+
+        # Verifica si winner_index es válido antes de acceder a competitors
+        if winner_index < len(competitors):
+            winner = competitors[winner_index]
+            selected.append(winner)
+
+    return selected
+
+
+class ZDT1:
+    # Función objetivo 1
+    def func1(self, x):
+        return x[0]
+
+    # Función objetivo 2
+    def func2(self, x):
+        g = 1 + 9 * (sum(x[1:]) / (len(x) - 1))
+        h = 1 - np.sqrt(self.func1(x) / g)
+        return g * h
+
+    def __str__(self):
+        return "ZDT1"
+
+
+class ZDT2:
+    # Función objetivo 1
+    def func1(self, x):
+        return x[0]
+
+    # Función objetivo 2
+    def func2(self, x):
+        g = 1 + 9 * (sum(x[1:]) / (len(x) - 1))
+        h = 1 - math.pow(self.func1(x) / g, 2.0)
+        return g * h
+
+    def __str__(self):
+        return "ZDT2"
+
+
+class ZDT3:
+    # Función objetivo 1
+    def func1(self, x):
+        return x[0]
+
+    # Función objetivo 2
+    def func2(self, x):
+        g = 1 + 9 * (sum(x[1:]) / (len(x) - 1))
+        h = (
+            1
+            - math.sqrt(self.func1(x) / g)
+            - (self.func1(x) / g) * math.sin(10 * math.pi * self.func1(x))
+        )
+        return g * h
+
+    def __str__(self):
+        return "ZDT3"
+
+
+class ZDT4:
+    # Función objetivo 1
+    def func1(self, x):
+        return x[0]
+
+    # Función objetivo 2
+    def func2(self, x):
+        g = (
+            1.0
+            + 10.0 * (len(x) - 1)
+            + sum(
+                [
+                    math.pow(x[i], 2.0) - 10.0 * math.cos(4.0 * math.pi * x[i])
+                    for i in range(1, len(x))
+                ]
             )
         )
+        h = 1.0 - math.sqrt(x[0] / g)
+        return g * h
 
-        population[-1].calculate_decimals()
-        population[-1].evaluate()
-
-    return population
-
-
-def next_generation(population, mutation_probability):
-    shuffle(population)
-
-    volume_gen = population[: int(len(population) / 2)]
-    surface_gen = population[int(len(population) / 2) :]
-
-    volume_gen = select_phenotypes(volume_gen, "volume")
-    surface_gen = select_phenotypes(surface_gen, "surface")
-    volume_gen = mutate(volume_gen, mutation_probability)
-    surface_gen = mutate(surface_gen, mutation_probability)
-    volume_gen = crossover(volume_gen)
-    surface_gen = crossover(surface_gen)
-
-    next_generation = volume_gen + surface_gen
-
-    # Evaluate creatures
-    for phenotype in next_generation:
-        phenotype.calculate_decimals()
-        phenotype.evaluate()
-
-    return next_generation
+    def __str__(self):
+        return "ZDT4"
 
 
-def select_phenotypes(population, type):
-    """
-    Rank based selection (Stochastic universal sampling)
-    """
+class ZDT5:
+    # Función objetivo 1
+    def func1(self, x):
+        return 1.0 + x[0]
 
-    # list, sorted by rank and filtered by constraint
-    if type == "volume":
-        sorted_population = sorted(population, key=lambda ind: ind.volume, reverse=True)
-    else:
-        sorted_population = sorted(
-            population, key=lambda ind: ind.surface, reverse=False
-        )
+    # Función objetivo 2
+    def func2(self, x):
+        g = sum([2 + v if v < 5 else 1 for v in x[1:]])
+        h = 1 / self.func1(x)
+        return g * h
 
-    # List with boundaries of interval for rank probability
-    probability_interval = get_probability_interval(len(sorted_population))
-
-    selection = []
-    for _ in range(len(population)):
-        rand = random()
-        for i, sub_interval in enumerate(probability_interval):
-            if rand <= sub_interval:
-                break
-        # selected individuals are copied into selection
-        # otherwise several items in selection would point
-        # to the same individual.
-        selection.append(copy(sorted_population[i]))
-
-    return selection
+    def __str__(self):
+        return "ZDT5"
 
 
-def get_probability_interval(max_rank):
-    """
-    Create list with probability of ranks, interval
-    of rank 1 is first in list
-    """
-    sum_ranks = max_rank * (max_rank + 1) / 2
-    interval = [float(max_rank) / sum_ranks]
-    for rank in range(max_rank - 1, 0, -1):
-        interval.append(interval[-1] + float(rank) / sum_ranks)
+class ZDT6:
+    # Función objetivo 1
+    def func1(self, x):
+        return 1 - math.exp(-4 * x[0]) * math.pow(math.sin(6 * math.pi * x[0]), 6)
 
-    return interval
+    # Función objetivo 2
+    def func2(self, x):
+        g = 1 + 9 * math.pow(sum(x[1:]) / (len(x) - 1), 0.25)
+        h = 1 - math.pow(self.func1(x) / g, 2)
+        return g * h
 
-
-def mutate(population, probability):
-    for phenotype in population:
-        phenotype.genotype = random_genotype_mutation(phenotype.genotype, probability)
-    return population
+    def __str__(self):
+        return "ZDT6"
 
 
-def random_genotype_mutation(genotype, probability):
-    """
-    Inverts each bit of genotype with probability p.
-    """
-    mutation = []
-    for bit in genotype:
-        if random() <= probability:
-            bit = "0" if bit == "1" else "1"
-        mutation.append(bit)
-
-    return "".join(mutation)
-
-
-def crossover(population, breeder_size=10):
-    """
-    Chose n creatures and mate those, two parents
-    giving birth to two offsprings. Offsprings will
-    replace their parents.
-    """
-    offsprings = []
-    shuffle(population)
-    for _ in range(int(breeder_size / 2)):
-        # Genotype of mother and father will be
-        # replaced with genotype of offsprings
-        mother = population.pop()
-        father = population.pop()
-        offspring_genotypes = singel_point_recombine(mother.genotype, father.genotype)
-        mother.genotype = offspring_genotypes[0]
-        father.genotype = offspring_genotypes[1]
-        offsprings.append(mother)
-        offsprings.append(father)
-
-    population += offsprings
-
-    return population
-
-
-def singel_point_recombine(gen1, gen2):
-    point = randint(0, min(len(gen1), len(gen2)))
-    return [gen1[:point] + gen2[point:], gen1[point:] + gen2[:point]]
-
-
-"""Encoding and Decoding
-"""
-
-
-def binary_to_real(bin_string, min=0, step=1):
-    base = 1
-    num = 0
-    for i in bin_string[::-1]:
-        num += base * int(i)
-        base *= 2
-    return num
-
-
-def main():
-    """
-    SIZE_POPULATION = 30
-    NUMBER_GENERATIONS = 100
-    MUTATION_PROBABILITY = 0.01
-
-    population = initialize_population(size=SIZE_POPULATION)
-
-    for _ in range(NUMBER_GENERATIONS):
-        population = next_generation(
-            population, mutation_probability=MUTATION_PROBABILITY
-        )
-
-    # Create summary: plot volume and surface of individuals
-    plot(
-        [phenotype.volume for phenotype in population],
-        [phenotype.surface for phenotype in population],
-    )
-    """
-    problem = ZDT1()
-    algorithm = NSGAII(problem)
-    algorithm.run(10000)
-    """
-    for solution in algorithm.result:
-        print(solution.objectives)
-    """
-
-    plt.scatter(
-        [s.objectives[0] for s in algorithm.result],
-        [s.objectives[1] for s in algorithm.result],
-    )
+# Función para graficar las soluciones no dominadas
+def plot_nondominated_solutions(x_data, y_data):
+    plt.figure(figsize=(8, 6))
+    plt.scatter(x_data, y_data, c="b", marker="o", label="Soluciones no dominadas")
     plt.xlim([0, 1.1])
     plt.ylim([0, 1.1])
-    plt.xlabel("$f_1(x)$")
-    plt.ylabel("$f_2(x)$")
+    plt.xlabel("Función Objetivo 1")
+    plt.ylabel("Función Objetivo 2")
+    plt.title("Soluciones no Dominadas en el Espacio de Pareto")
+    plt.legend()
+    plt.grid(True)
     plt.show()
 
 
+def main():
+    # Define tus funciones objetivo y otros parámetros aquí
+    ZDT = ZDT6()
+    objective_functions_list = [
+        ZDT.func1,
+        ZDT.func2,
+    ]  # Reemplaza con tus funciones objetivo
+    chromosome_type = "real-valued"
+    # array with m 0s
+    m = 30
+    lower = np.zeros(
+        m
+    )  # Reemplaza con los límites inferiores de tu espacio de búsqueda
+    upper = (
+        np.ones(m) * 10
+    )  # Reemplaza con los límites superiores de tu espacio de búsqueda
+    nBits = 0
+    population_size = 300
+    number_of_iterations = 100
+    nc = 2
+    mutation_probability = 0.05
+    uniform_mutation_sd = 0.1
+
+    # Ejecuta el algoritmo VEGA
+    results = vega(
+        objective_functions_list,
+        chromosome_type,
+        lower,
+        upper,
+        nBits,
+        population_size,
+        number_of_iterations,
+        nc,
+        mutation_probability,
+        uniform_mutation_sd,
+    )
+
+    values = results["values"]
+
+    # Encuentra el valor mínimo y máximo en cada columna
+    min_column0 = np.min(values[:, 0])
+    max_column0 = np.max(values[:, 0])
+    min_column1 = np.min(values[:, 1])
+    max_column1 = np.max(values[:, 1])
+
+    # Normaliza los valores en ambas columnas
+    x_data = (values[:, 0] - min_column0) / (max_column0 - min_column0)
+    y_data = (values[:, 1] - min_column1) / (max_column1 - min_column1)
+
+    # Imprime las soluciones no dominadas
+    a = open(f"../results/resultados{ZDT}.txt", "a")
+    medias = {}
+    medias["f1"] = 0
+    medias["f2"] = 0
+    a.write(f"Soluciones no dominadas encontradas: {ZDT}\n")
+    a.write("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+    for i, _ in enumerate(results["nondominated_solutions"]):
+        
+        a.write(
+            f"{i + 1}, Funcion 1: {results['values'][i][0]}, Funcion 2: {results['values'][i][1]}\n"
+        )
+        
+        medias["f1"] += results["values"][i][0]
+        medias["f2"] += results["values"][i][1]
+    a.write("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+    a.write(f"Elementos: {len(results['nondominated_solutions'])}\n")
+    a.write(
+        f"Media Funcion 1: {medias['f1'] / len(results['nondominated_solutions'])}\n"
+    )
+    a.write(
+        f"Media Funcion 2: {medias['f2'] / len(results['nondominated_solutions'])}\n"
+    )
+    a.write("------------------------------------------------------------------\n")
+    a.close()
+
+    # Grafica las soluciones no dominadas
+    # plot_nondominated_solutions(x_data, y_data)
+
+    # print(x_data)
+
+    # create scatterplot with regression line
+    sns.regplot(
+        x=x_data,
+        y=y_data,
+        lowess=True,
+        ci=99,
+        marker="o",
+        color=".3",
+        line_kws=dict(color="r"),
+    )
+    plt.xlim([0, 1.1])
+    plt.ylim([0, 1.1])
+    plt.xlabel("Función Objetivo 1")
+    plt.ylabel("Función Objetivo 2")
+    plt.show()
+
+
+# Ejemplo de uso:
 if __name__ == "__main__":
     main()
