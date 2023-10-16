@@ -4,6 +4,12 @@ import matplotlib.pyplot as plt
 import math
 import seaborn as sns
 import warnings
+import numpy as np
+from pymoo.problems import get_problem
+from pymoo.visualization.scatter import Scatter
+from pymoo.indicators.hv import HV
+from pymoo.indicators.gd_plus import GDPlus
+from pymoo.indicators.igd_plus import IGDPlus
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -464,6 +470,57 @@ def plot_nondominated_solutions(x_data, y_data):
     plt.show()
 
 
+def imprimir(ZDT, results, pf):
+    # Imprime las soluciones no dominadas
+    a = open(f"../results/resultados_{ZDT}.txt", "a")
+    medias = {}
+    medias["f1"] = 0
+    medias["f2"] = 0
+    a.write(f"Soluciones no dominadas encontradas: {ZDT}\n")
+    a.write(
+        "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+    )
+    for i, _ in enumerate(results["nondominated_solutions"]):
+        a.write(
+            f"{i + 1}, Funcion 1: {results['values'][i][0]}, Funcion 2: {results['values'][i][1]}\n"
+        )
+
+        medias["f1"] += results["values"][i][0]
+        medias["f2"] += results["values"][i][1]
+    a.write(
+        "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n"
+    )
+    a.write(f"Elementos: {len(results['nondominated_solutions'])}\n")
+    a.write(
+        f"Media Funcion 1: {medias['f1'] / len(results['nondominated_solutions'])}\n"
+    )
+    a.write(
+        f"Media Funcion 2: {medias['f2'] / len(results['nondominated_solutions'])}\n"
+    )
+    a.write(f"Hipervolumen: {hypervolume(results)}\n")
+    a.write(f"GDPlus: {GDPlus_Value(pf, results)}\n")
+    a.write(f"IGDPlus: {IGDPlus_Value(pf, results)}\n")
+
+    a.write("------------------------------------------------------------------\n")
+    a.close()
+
+
+def hypervolume(results):
+    ref_point = np.array([1.2, 1.2])
+    ind = HV(ref_point=ref_point)
+    return ind(results["values"])
+
+
+def GDPlus_Value(pf, results):
+    ind = GDPlus(pf)
+    return ind(results["values"])
+
+
+def IGDPlus_Value(pf, results):
+    ind = IGDPlus(pf)
+    return ind(results["values"])
+
+
 def main():
     # Define tus funciones objetivo y otros parámetros aquí
     ZDT = ZDT6()
@@ -500,50 +557,38 @@ def main():
         mutation_probability,
         uniform_mutation_sd,
     )
-
-    values = results["values"]
-
     # Encuentra el valor mínimo y máximo en cada columna
-    min_column0 = np.min(values[:, 0])
-    max_column0 = np.max(values[:, 0])
-    min_column1 = np.min(values[:, 1])
-    max_column1 = np.max(values[:, 1])
+    min_column0 = np.min(results["values"][:, 0])
+    max_column0 = np.max(results["values"][:, 0])
+    min_column1 = np.min(results["values"][:, 1])
+    max_column1 = np.max(results["values"][:, 1])
 
     # Normaliza los valores en ambas columnas
-    x_data = (values[:, 0] - min_column0) / (max_column0 - min_column0)
-    y_data = (values[:, 1] - min_column1) / (max_column1 - min_column1)
+    results["values"][:, 0] = (results["values"][:, 0] - min_column0) / (
+        max_column0 - min_column0
+    )
+    results["values"][:, 1] = (results["values"][:, 1] - min_column1) / (
+        max_column1 - min_column1
+    )
 
-    # Imprime las soluciones no dominadas
-    a = open(f"../results/resultados{ZDT}.txt", "a")
-    medias = {}
-    medias["f1"] = 0
-    medias["f2"] = 0
-    a.write(f"Soluciones no dominadas encontradas: {ZDT}\n")
-    a.write("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-    for i, _ in enumerate(results["nondominated_solutions"]):
-        
-        a.write(
-            f"{i + 1}, Funcion 1: {results['values'][i][0]}, Funcion 2: {results['values'][i][1]}\n"
-        )
-        
-        medias["f1"] += results["values"][i][0]
-        medias["f2"] += results["values"][i][1]
-    a.write("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-    a.write(f"Elementos: {len(results['nondominated_solutions'])}\n")
-    a.write(
-        f"Media Funcion 1: {medias['f1'] / len(results['nondominated_solutions'])}\n"
-    )
-    a.write(
-        f"Media Funcion 2: {medias['f2'] / len(results['nondominated_solutions'])}\n"
-    )
-    a.write("------------------------------------------------------------------\n")
-    a.close()
+    x_data = results["values"][:, 0]
+    y_data = results["values"][:, 1]
 
     # Grafica las soluciones no dominadas
     # plot_nondominated_solutions(x_data, y_data)
 
-    # print(x_data)
+    # The pareto front of a scaled zdt1 problem
+    pf = get_problem(str(ZDT)).pareto_front()
 
+    # plot the result
+    Scatter(legend=True).add(pf, label="Pareto-front").add(
+        results["values"], label="Result"
+    ).show()
+
+    imprimir(ZDT, results, pf)
+
+    # print(x_data)
+    """
     # create scatterplot with regression line
     sns.regplot(
         x=x_data,
@@ -559,6 +604,7 @@ def main():
     plt.xlabel("Función Objetivo 1")
     plt.ylabel("Función Objetivo 2")
     plt.show()
+    """
 
 
 # Ejemplo de uso:
