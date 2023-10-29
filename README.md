@@ -1,65 +1,65 @@
-**Repositorio VEGA**
+**VEGA Repository**
 
-Este repositorio implementa el algoritmo genético VEGA (Vector Evaluated Genetic Algorithm), un algoritmo genético de optimización multiobjetivo diseñado para problemas con funciones objetivo vectoriales.
+This repository implements the VEGA (Vector Evaluated Genetic Algorithm), a multi-objective genetic algorithm designed for problems with vector objective functions.
 
-## Jerarquía de carpetas
+## Folder hierarchy
 
-El repositorio tiene la siguiente jerarquía de carpetas:
+The repository has the following folder hierarchy:
 
-* `image`: Esta carpeta contiene imágenes generadas de los tests.
-* `results`: Esta carpeta contiene los resultados de las ejecuciones del algoritmo VEGA.
-* `VEGA`: Esta carpeta contiene el código fuente del algoritmo VEGA.
-    * `binary`: Esta subcarpeta contiene el código fuente para el cruce y la mutación de cromosomas binarios.
-    * `crossover`: Esta subcarpeta contiene el código fuente para los diferentes operadores de cruce.
-    * `mutation`: Esta subcarpeta contiene el código fuente para los diferentes operadores de mutación.
-    * `selection`: Esta subcarpeta contiene el código fuente para los diferentes operadores de selección.
-    * `util`: Esta subcarpeta contiene funciones auxiliares.
-* `main.py`: Este archivo contiene el código principal para ejecutar el algoritmo VEGA.
+* `image`: This folder contains images generated from the tests.
+* `results`: This folder contains the results of the VEGA algorithm executions.
+* `VEGA`: This folder contains the source code of the VEGA algorithm.
+    * `binary`: This subfolder contains the source code for crossover and mutation of binary chromosomes.
+    * `crossover`: This subfolder contains the source code for the different crossover operators.
+    * `mutation`: This subfolder contains the source code for the different mutation operators.
+    * `selection`: This subfolder contains the source code for the different selection operators.
+    * `util`: This subfolder contains auxiliary functions.
+* `main.py`: This file contains the main code to run the VEGA algorithm.
 
-## Instalación
+## Installation
 
-Para instalar el repositorio, siga estos pasos:
+To install the repository, follow these steps:
 
-1. Clonar el repositorio:
+1. Clone the repository:
 
 ```
-git clone https://github.com/[usuario]/vega.git
+git clone https://github.com/[user]/vega.git
 ```
 
-2. Instalar las dependencias:
+2. Install the dependencies:
 
 ```
 pip install -r requirements.txt
 ```
 
-## Uso
+## Usage
 
-Para ejecutar el algoritmo VEGA, siga estos pasos:
+To run the VEGA algorithm, follow these steps:
 
-1. Modificar el archivo `main.py` para configurar los parámetros del algoritmo.
-2. Ejecutar el archivo `main.py`:
+1. Modify the `main.py` file to configure the algorithm's parameters.
+2. Run the `main.py` file:
 
 ```
 python main.py
 ```
 
-## Documentación
+## Documentation
 
-La documentación del algoritmo VEGA se encuentra en el archivo `docs/vega.md`.
+The documentation of the VEGA algorithm is located in the `docs/vega.md` file.
 
-## Contribuciones
+## Contributions
 
-Se aceptan contribuciones al repositorio. Para contribuir, siga estos pasos:
+Contributions to the repository are welcome. To contribute, follow these steps:
 
-1. Forke el repositorio.
-2. Haga los cambios necesarios en el código.
-3. Envíe una solicitud de extracción.
+1. Fork the repository.
+2. Make the necessary changes to the code.
+3. Submit a pull request.
 
-## Licencia
+## License
 
-El repositorio está licenciado bajo la licencia MIT.
+The repository is licensed under the MIT license.
 
-## Referencias
+## References
 
 * Schaffer, James David. "Some experiments in machine learning using vector evaluated genetic algorithms." (1985).
 * C{\^\i}rciu, MIHAELA SIMONA, and FLORIN Leon. "Comparative study of multiobjective genetic algorithms." Bulletin of the Polytechnic Institute of Ia{\c{s}}i (2010): 35-47.
@@ -70,26 +70,26 @@ El repositorio está licenciado bajo la licencia MIT.
 * Srinivas, Nidamarthi, and Kalyanmoy Deb. "Muiltiobjective optimization using nondominated sorting in genetic algorithms." Evolutionary computation 2.3 (1994): 221-248.
 * Zitzler, Eckart, Kalyanmoy Deb, and Lothar Thiele. "Comparison of multiobjective evolutionary algorithms: Empirical results." Evolutionary computation 8.2 (2000): 173-195.
 
-**Ejemplo de uso**
+**Example of use**
 
-Para ejecutar el algoritmo VEGA para un problema con dos funciones objetivo, siga estos pasos:
+To run the VEGA algorithm for a problem with two objective functions, follow these steps:
 
-1. Añada sus funciones como ZDT7 dentro de test/ZDT.py
+1. Add your functions as ZDT7 inside test/ZDT.py
 
-2. Modifique el archivo `main.py` para configurar los parámetros del algoritmo. En este caso, los parámetros son:
-    * `problem`: El tipo de problema a resolver.
-    * `objective_functions`: Una lista de las funciones objetivo.
-    * `population_size`: El tamaño de la población.
-    * `number_of_iterations`: El número de iteraciones.
+2. Modify the `main.py` file to configure the algorithm's parameters. In this case, the parameters are:
+    * `problem`: The type of problem to solve.
+    * `objective_functions`: A list of the objective functions.
+    * `population_size`: The population size.
+    * `number_of_iterations`: The number of iterations.
 
-2. Ejecute el archivo `main.py`:
+2. Run the `main.py` file:
 
 ```
 python main.py
 ```
 
-El algoritmo VEGA ejecutará 100 iteraciones y generará una solución no dominada para el problema.
+The VEGA algorithm will run 100 iterations and generate a non-dominated solution for the problem.
 
-**Más información**
+**More information**
 
-Para obtener más información sobre el algoritmo VEGA, consulte la documentación del repositorio.
+For more information about the VEGA algorithm, please refer to the repository's documentation.
