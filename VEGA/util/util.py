@@ -49,7 +49,7 @@ def plot_nondominated_solutions(x_data: list, y_data: list) -> None:
 
 def imprimir(ZDT: ZDT, results: dict, pf: np.ndarray) -> None:
     # Imprime las soluciones no dominadas
-    a = open(f"../results/resultados_{ZDT}_P.txt", "a")
+    a = open(f"../results/gen/resultados_{ZDT}_P.txt", "a")
     medias = {}
     medias["f1"] = 0
     medias["f2"] = 0
@@ -110,7 +110,7 @@ def plot_Scatter(pf: np.ndarray, results: dict, ZDT: ZDT) -> None:
     image = Scatter(legend=True)
     image.add(pf, label="Pareto-front")
     image.add(results["values"], label="Result")
-    image.save(f"../image/generados/vega_{ZDT}_P.png")
+    image.save(f"../image/gen/vega_{ZDT}_P.png")
 
 
 def normalizar(results: dict) -> dict:
