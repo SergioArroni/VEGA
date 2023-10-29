@@ -1,18 +1,21 @@
+import numpy as np
 from binary import binary_vega
 from numeric import numeric_vega
+from typing import Callable
+
 
 def vega(
-    objective_functions_list,
-    chromosome_type,
-    lower=[],
-    upper=[],
-    nBits=0,
-    population_size=None,
-    number_of_iterations=100,
-    nc=2,
-    mutation_probability=0.05,
-    uniform_mutation_sd=0.1,
-):
+    objective_functions_list: list[Callable],
+    chromosome_type: str,
+    lower: np.ndarray,
+    upper: np.ndarray,
+    nBits: int,
+    population_size: int,
+    number_of_iterations: int,
+    nc: int,
+    mutation_probability: float,
+    uniform_mutation_sd: float,
+) -> dict:
     if chromosome_type == "binary":
         return binary_vega(
             objective_functions_list,

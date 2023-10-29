@@ -1,15 +1,15 @@
 import numpy as np
 import random
 import mutation, selecction, util, crossover
-
+from typing import Callable
 
 def binary_vega(
-    objective_functions_list,
-    nBits,
-    population_size,
-    number_of_iterations,
-    mutation_probability=0.05,
-):
+    objective_functions_list: list[Callable],
+    nBits: int,
+    population_size: int,
+    number_of_iterations: int,
+    mutation_probability: int = 0.01,
+) -> dict:
     number_of_objective_functions = len(objective_functions_list)
     subpopulation_size = int((population_size / number_of_objective_functions))
     population = [init_binary_chromosome(nBits) for _ in range(population_size)]
@@ -98,5 +98,5 @@ def binary_vega(
 
 
 # Inicialización de un cromosoma binario (valores aleatorios de 0 y 1)
-def init_binary_chromosome(nBits):
+def init_binary_chromosome(nBits: int) -> np.array:
     return np.random.randint(2, size=nBits)

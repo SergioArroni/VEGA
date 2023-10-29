@@ -1,17 +1,18 @@
 import numpy as np
 import random
 import mutation, selecction, util, crossover
+from typing import Callable
 
 
 def numeric_vega(
-    objective_functions_list,
-    lower,
-    upper,
-    population_size,
-    number_of_iterations,
-    nc,
-    uniform_mutation_sd,
-):
+    objective_functions_list: list[Callable],
+    lower: np.ndarray,
+    upper: np.ndarray,
+    population_size: int,
+    number_of_iterations: int,
+    nc: int,
+    uniform_mutation_sd: float,
+) -> dict:
     if len(lower) != len(upper):
         raise ValueError("Size of lower and upper differ")
 
@@ -56,7 +57,7 @@ def numeric_vega(
 
         objective_functions_values = np.array(
             [
-                list(map(lambda f: f(chromosome), objective_functions_list))
+                list(map(lambda f: f(x=chromosome), objective_functions_list))
                 for chromosome in population
             ]
         )
@@ -115,5 +116,5 @@ def numeric_vega(
 
 
 # Inicialización de cromosoma numérico (valores aleatorios dentro de los límites)
-def init_numeric_chromosome(lower, upper):
+def init_numeric_chromosome(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
     return np.random.uniform(lower, upper, size=len(lower))

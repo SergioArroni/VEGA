@@ -1,30 +1,33 @@
 import math
 import numpy as np
+from abc import ABC, abstractmethod
 
 
-class ZDT:
-    def __init__(self, m=30):
+class ZDT(ABC):
+    def __init__(self, m: int = 30) -> None:
         self.m = m
 
     # Función objetivo 1
-    def func1(self, x):
-        pass
+    @abstractmethod
+    def func1(self, x: np.ndarray) -> float:
+        raise NotImplementedError()
 
     # Función objetivo 2
-    def func2(self, x):
-        pass
+    @abstractmethod
+    def func2(self, x: np.ndarray) -> float:
+        raise NotImplementedError()
 
 
 class ZDT1(ZDT):
-    def __init__(self, m=30):
+    def __init__(self, m: int = 30) -> None:
         super().__init__(m)
 
     # Función objetivo 1
-    def func1(self, x):
+    def func1(self, x: np.ndarray) -> float:
         return x[0]
 
     # Función objetivo 2
-    def func2(self, x):
+    def func2(self, x: np.ndarray) -> float:
         g = 1 + 9 * (sum(x[1:]) / (len(x) - 1))
         h = 1 - np.sqrt(self.func1(x) / g)
         return g * h
@@ -34,15 +37,15 @@ class ZDT1(ZDT):
 
 
 class ZDT2(ZDT):
-    def __init__(self, m=30):
+    def __init__(self, m: int = 30) -> None:
         super().__init__(m)
 
     # Función objetivo 1
-    def func1(self, x):
+    def func1(self, x: np.ndarray) -> float:
         return x[0]
 
     # Función objetivo 2
-    def func2(self, x):
+    def func2(self, x: np.ndarray) -> float:
         g = 1 + 9 * (sum(x[1:]) / (len(x) - 1))
         h = 1 - math.pow(self.func1(x) / g, 2.0)
         return g * h
@@ -52,15 +55,15 @@ class ZDT2(ZDT):
 
 
 class ZDT3(ZDT):
-    def __init__(self, m=30):
+    def __init__(self, m: int = 30) -> None:
         super().__init__(m)
 
     # Función objetivo 1
-    def func1(self, x):
+    def func1(self, x: np.ndarray) -> float:
         return x[0]
 
     # Función objetivo 2
-    def func2(self, x):
+    def func2(self, x: np.ndarray) -> float:
         g = 1 + 9 * (sum(x[1:]) / (len(x) - 1))
         h = (
             1
@@ -74,15 +77,15 @@ class ZDT3(ZDT):
 
 
 class ZDT4(ZDT):
-    def __init__(self, m=10):
+    def __init__(self, m: int = 10) -> None:
         super().__init__(m)
 
     # Función objetivo 1
-    def func1(self, x):
+    def func1(self, x: np.ndarray) -> float:
         return x[0]
 
     # Función objetivo 2
-    def func2(self, x):
+    def func2(self, x: np.ndarray) -> float:
         g = (
             1.0
             + 10.0 * (len(x) - 1)
@@ -101,15 +104,15 @@ class ZDT4(ZDT):
 
 
 class ZDT5(ZDT):
-    def __init__(self, m=11):
+    def __init__(self, m: int = 11) -> None:
         super().__init__(m)
 
     # Función objetivo 1
-    def func1(self, x):
+    def func1(self, x: np.ndarray) -> float:
         return 1 + bin(int(x[0] * 10**13)).count("1")
 
     # Función objetivo 2
-    def func2(self, x):
+    def func2(self, x: np.ndarray) -> float:
         g = sum(
             [
                 2 + bin(int(v * 10**13)).count("1")
@@ -126,15 +129,15 @@ class ZDT5(ZDT):
 
 
 class ZDT6(ZDT):
-    def __init__(self, m=10):
+    def __init__(self, m: int = 10) -> None:
         super().__init__(m)
 
     # Función objetivo 1
-    def func1(self, x):
+    def func1(self, x: np.ndarray) -> float:
         return 1 - math.exp(-4 * x[0]) * math.pow(math.sin(6 * math.pi * x[0]), 6)
 
     # Función objetivo 2
-    def func2(self, x):
+    def func2(self, x: np.ndarray) -> float:
         g = 1 + 9 * math.pow(sum(x[1:]) / (len(x) - 1), 0.25)
         h = 1 - math.pow(self.func1(x) / g, 2)
         return g * h

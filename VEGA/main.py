@@ -11,15 +11,15 @@ def main():
     objective_functions_list = [
         ZDT.func1,
         ZDT.func2,
-    ]  # Reemplaza con tus funciones objetivo
+    ]  
     chromosome_type = "real-valued"
 
     lower = np.zeros(
         ZDT.m
-    )  # Reemplaza con los límites inferiores de tu espacio de búsqueda
+    )  
     upper = (
         np.ones(ZDT.m) * 1
-    )  # Reemplaza con los límites superiores de tu espacio de búsqueda
+    ) 
     nBits = 0
     population_size = 100
     number_of_iterations = 250
@@ -43,7 +43,6 @@ def main():
 
     # util.normalizar(results)
 
-    # The pareto front of a scaled zdt1 problem
     pf = util.get_pf(ZDT)
 
     util.plot_Scatter(pf, results, ZDT)

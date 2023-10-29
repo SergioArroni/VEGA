@@ -6,10 +6,12 @@ from pymoo.visualization.scatter import Scatter
 from pymoo.problems import get_problem
 import seaborn as sns
 import numpy as np
+import test.ZDT as ZDT
+from typing import Any, Callable
 
 
 # Función de selección para encontrar soluciones no dominadas en el espacio de Pareto
-def find_nondominated(objective_functions_values):
+def find_nondominated(objective_functions_values: np.ndarray) -> list:
     n = len(objective_functions_values)
     nondominated_solutions = []
 
@@ -32,7 +34,7 @@ def find_nondominated(objective_functions_values):
 
 
 # Función para graficar las soluciones no dominadas
-def plot_nondominated_solutions(x_data, y_data):
+def plot_nondominated_solutions(x_data: list, y_data: list) -> None:
     plt.figure(figsize=(8, 6))
     plt.scatter(x_data, y_data, c="b", marker="o", label="Soluciones no dominadas")
     plt.xlim([0, 1.1])
@@ -45,7 +47,7 @@ def plot_nondominated_solutions(x_data, y_data):
     plt.show()
 
 
-def imprimir(ZDT, results, pf):
+def imprimir(ZDT: ZDT, results: dict, pf: np.ndarray) -> None:
     # Imprime las soluciones no dominadas
     a = open(f"../results/resultados_{ZDT}_P.txt", "a")
     medias = {}
@@ -80,30 +82,30 @@ def imprimir(ZDT, results, pf):
     a.close()
 
 
-def hypervolume(results):
+def hypervolume(results: dict) -> float:
     ref_point = np.array([1.1, 1.1])
     ind = HV(ref_point=ref_point)
     return ind(results["values"])
 
 
-def GDPlus_Value(pf, results):
+def GDPlus_Value(pf: np.ndarray, results: dict) -> float:
     ind = GDPlus(pf)
     return ind(results["values"])
 
 
-def IGDPlus_Value(pf, results):
+def IGDPlus_Value(pf: np.ndarray, results: dict) -> float:
     ind = IGDPlus(pf)
     return ind(results["values"])
 
 
-def bind_parameters(func, **kwargs):
+def bind_parameters(func: Callable, **kwargs) -> Any:
     def wrapped(chromosome):
         return func(chromosome, **kwargs)
 
     return wrapped
 
 
-def plot_Scatter(pf, results, ZDT):
+def plot_Scatter(pf: np.ndarray, results: dict, ZDT: ZDT) -> None:
     # plot the result
     image = Scatter(legend=True)
     image.add(pf, label="Pareto-front")
@@ -111,7 +113,7 @@ def plot_Scatter(pf, results, ZDT):
     image.save(f"../image/generados/vega_{ZDT}_P.png")
 
 
-def normalizar(results):
+def normalizar(results: dict) -> dict:
     # Encuentra el valor mínimo y máximo en cada columna
     min_column0 = np.min(results["values"][:, 0])
     max_column0 = np.max(results["values"][:, 0])
@@ -128,7 +130,7 @@ def normalizar(results):
     return results
 
 
-def regresion(results):
+def regresion(results: dict) -> None:
     # create scatterplot with regression line
     sns.regplot(
         x=results["values"][:, 0],
@@ -146,5 +148,5 @@ def regresion(results):
     plt.show()
 
 
-def get_pf(ZDT):
+def get_pf(ZDT: ZDT) -> Any:
     return get_problem(str(ZDT)).pareto_front()

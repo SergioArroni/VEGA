@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Función de selección por torneo
-def tournament_selection(subpopulation_fitness):
+def tournament_selection(subpopulation_fitness: np.ndarray) -> list:
     k = 2  # Número de individuos en el torneo
     selected = []
 

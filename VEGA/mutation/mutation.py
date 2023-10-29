@@ -3,7 +3,9 @@ import random
 
 
 # Función de mutación distribuida normalmente para cromosomas reales
-def normally_distributed_mutation(chromosome, sd, lower, upper):
+def normally_distributed_mutation(
+    chromosome: list, sd: float, lower: np.ndarray, upper: np.ndarray
+) -> list:
     mutation = np.random.normal(0, sd, size=len(chromosome))
     mutated_chromosome = chromosome + mutation
 
@@ -14,7 +16,7 @@ def normally_distributed_mutation(chromosome, sd, lower, upper):
 
 
 # Operador de mutación para cromosomas binarios (cambia aleatoriamente un bit)
-def binaryMutation(chromosome, probability):
+def binaryMutation(chromosome: list, probability: float) -> list:
     mutated_chromosome = chromosome.copy()
     for i in range(len(chromosome)):
         if random.random() < probability:
