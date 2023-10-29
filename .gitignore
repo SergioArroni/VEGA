@@ -159,9 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-.test
-.test/
-.pagmo-master
-.pagmo-master/
-.pagmo
-.pagmo/
+
+results
+image
+*.txt
